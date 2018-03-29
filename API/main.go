@@ -1,25 +1,27 @@
 package main
 
 import (
+	cache "GoConcurrencyPOC/API/cache"
 	"fmt"
 	"log"
 	"net/http"
-	"reflect"
 	"time"
-
-	"github.com/patrickmn/go-cache"
 
 	"github.com/gorilla/mux"
 )
 
-var c = cache.New(1*time.Minute, 1*time.Minute)
+func init() {
+	fmt.Println("Setting all the Auth Creds ")
+	setAuthCreds()
+}
 
+func setAuthCreds() {
+	cache.DBjwt.Set([]byte("FIRST"), []byte("FIRST_KEY"))
+	cache.DBjwt.Set([]byte("SECOND"), []byte("SECOND_KEY"))
+}
 func main() {
 
 	router := mux.NewRouter()
-	// Set the value of the key "foo" to "bar", with the default expiration time
-	c.Set("foo", "bar", cache.DefaultExpiration)
-	c.Set("REIN", "reintoken", 30*time.Second)
 
 	fmt.Println("Running Listening")
 	router.HandleFunc("/health", GetHealth).Methods("GET")
@@ -36,30 +38,15 @@ func main() {
 
 func GetCacheData(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("In get cache data function")
-	foo, found := c.Get("REIN")
-	if !found {
-		fmt.Println("Expired Token  : Need to call auth and set the token")
-		GetReinAuth()
-	}
-	fmt.Printf("Found : %t , Value : %s \n", found, foo)
-}
+	first, _ := cache.DBjwt.Get([]byte("FIRST"))
+	second, _ := cache.DBjwt.Get([]byte("SECOND"))
 
-func GetReinAuth() string {
-	fmt.Println("Calling Rein Auth call")
-	c.Set("REIN", "reintoken", 30*time.Second)
-
-	token, _ := c.Get("REIN")
-	t := reflect.TypeOf(token)
-	for i := 0; i < t.NumField(); i++ {
-		fmt.Printf("%+v\n", t.Field(i))
-	}
-
-	return "reintoken"
-	//return token
+	fmt.Printf("First : %s , Second : %s \n ", string(first), string(second))
 }
 
 func GetHealth(w http.ResponseWriter, r *http.Request) {
 	fmt.Println("In Health")
+
 	fmt.Fprintf(w, "Health")
 }
 
